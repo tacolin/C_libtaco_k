@@ -135,6 +135,7 @@ int udp_init(struct udp* udp, char* local_ip, int local_port)
 {
     int chk;
     const int on = 1;
+    int len = sizeof(on);
     struct sockaddr_in me = {};
     mm_segment_t oldfs = get_fs();
 
@@ -143,7 +144,7 @@ int udp_init(struct udp* udp, char* local_ip, int local_port)
     set_fs(get_ds());
 
     udp->local_port = local_port;
-    udp->fd = _socket(AF_INET, SOCK_DGRAM, 0);
+    udp->fd = _socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     CHECK_IF(udp->fd == NULL, goto _ERROR, "socket failed");
 
     if (udp->local_port != UDP_PORT_ANY)
@@ -160,8 +161,8 @@ int udp_init(struct udp* udp, char* local_ip, int local_port)
         }
         me.sin_port = htons(local_port);
 
-        chk = udp->fd->ops->setsockopt(udp->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&on, sizeof(on));
-        CHECK_IF(chk < 0, goto _ERROR, "setsockopt reuse failed");
+        chk = sock_setsockopt(udp->fd, SOL_SOCKET, SO_REUSEADDR, (void*)&on, len);
+        CHECK_IF(chk < 0, goto _ERROR, "setsockopt reuse failed, chk = %d", chk);
 
         chk = udp->fd->ops->bind(udp->fd, (struct sockaddr*)&me, sizeof(me));
         CHECK_IF(chk < 0, goto _ERROR, "bind failed");
